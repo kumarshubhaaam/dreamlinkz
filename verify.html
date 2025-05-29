@@ -1,121 +1,107 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Verify Task</title>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+  <meta name="theme-color" content="#1c1c1c">
+  <title>Stream</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     body {
+      background-color: #0a0a0a;
+      color: white;
+      font-family: 'Inter', sans-serif;
       margin: 0;
-      font-family: 'Outfit', sans-serif;
-      background: #000;
-      color: white;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
     }
-    .card {
-      background: linear-gradient(145deg, #1e1e1e, #111);
-      border-radius: 20px;
-      box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
-      padding: 20px;
-      max-width: 400px;
-      width: 90%;
+    .verify-lock, .card {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 2rem;
+      border-radius: 1rem;
+    }
+    .verify-lock {
+      border: 2px dashed #00ffe5;
       text-align: center;
-    }
-    h2 {
-      font-size: 1.5em;
-    }
-    iframe {
-      width: 100%;
-      border-radius: 12px;
-      margin: 10px 0;
-    }
-    .btn {
-      padding: 15px;
-      margin: 10px 0;
-      width: 100%;
-      border: none;
-      border-radius: 50px;
-      font-size: 1em;
-      font-weight: 600;
-      cursor: pointer;
-      color: white;
+      background: #1a1a1a;
     }
     .verify-btn {
       background: linear-gradient(to right, #ff6a00, #ff9472);
-    }
-    .how-btn {
-      background: linear-gradient(to right, #6a11cb, #2575fc);
-    }
-    .notice-box {
-      background: rgba(255,255,255,0.05);
-      border-radius: 12px;
-      padding: 15px;
-      margin-top: 15px;
-      font-size: 0.95em;
-    }
-    .highlight {
+      border: none;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 2rem;
       font-weight: bold;
+      cursor: pointer;
+    }
+    .card {
+      background: #1c1c1c;
+      box-shadow: 0 0 12px rgba(0, 255, 226, 0.2);
+      border: 1.5px solid #00ffe5;
+    }
+    .iframe-container {
+      position: relative;
+      padding-bottom: 56.25%;
+      height: 0;
+      overflow: hidden;
+      border-radius: 0.5rem;
+    }
+    .iframe-container iframe {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    .title {
+      text-align: center;
+      font-size: 1.3rem;
+      margin-bottom: 1rem;
     }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h2>⚡ Must Watch Tutorial ⚡</h2>
-    <iframe height="215" src="https://www.youtube.com/embed/dQw4w9WgXcQ" frameborder="0" allowfullscreen></iframe>
+  <div id="verificationLock" class="verify-lock" style="display: none;">
+    <h2>Verification Required</h2>
+    <p>This token is invalid or expired.</p>
+    <button class="verify-btn" onclick="window.location.href='verify.html'">Verify Again</button>
+  </div>
 
-    <h3>Task Verification</h3>
-    <p>Please verify your task by clicking the button below to continue with the process.</p>
-
-    <div class="notice-box">
-      <div class="highlight">Notice:</div>
-      Generate key to view all contents of this site for next 24 hours.
+  <div class="card" id="streamCard" style="display: none;">
+    <div class="title" id="videoTitle">Streaming...</div>
+    <div class="iframe-container">
+      <iframe id="videoPlayer" allowfullscreen></iframe>
     </div>
-
-    <button class="btn verify-btn" onclick="generateAdLink()">Click Here To Verify Task</button>
-    <button class="btn how-btn" onclick="alert('Step-by-step guide will go here...')">How To Open Link?</button>
   </div>
 
   <script>
-  const params = new URLSearchParams(window.location.search);
-  const url = params.get('url');
-  const title = params.get('title');
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    const streamUrl = urlParams.get('url');
+    const title = urlParams.get('title') || "Streaming...";
 
-  async function generateAdLink() {
-    if (!url) {
-      alert("Missing target URL.");
-      return;
+    function generateFingerprint() {
+      return btoa(navigator.userAgent + screen.width + screen.height);
     }
 
-    const finalRedirect = `https://dreamlinkz.netlify.app/access-granted.html?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title || "")}`;
-    const apiToken = '067989ffeb7fa279b3aa7036dff92a50b5b75492';
-    const shortUrlApi = `https://linkshortify.com/api?api=${apiToken}&url=${encodeURIComponent(finalRedirect)}`;
+    const data = JSON.parse(localStorage.getItem('verifiedUser') || '{}');
+    const fingerprint = generateFingerprint();
+    const now = Date.now();
 
-    const btn = document.querySelector('.verify-btn');
-    btn.disabled = true;
-    btn.textContent = "Generating...";
+    const streamCard = document.getElementById("streamCard");
+    const verificationLock = document.getElementById("verificationLock");
 
-    try {
-      const res = await fetch(shortUrlApi);
-      const result = await res.json();
-
-      if (result.status === 'error') {
-        alert(result.message);
-        btn.disabled = false;
-        btn.textContent = "Click Here To Verify Task";
-      } else {
-        window.location.href = result.shortenedUrl;
-      }
-    } catch (error) {
-      console.error('LinkShortify Error:', error);
-      alert('Failed to generate ad link.');
-      btn.disabled = false;
-      btn.textContent = "Click Here To Verify Task";
+    if (
+      data &&
+      data.token === token &&
+      data.fingerprint === fingerprint &&
+      now < data.expires
+    ) {
+      document.getElementById("videoTitle").innerText = decodeURIComponent(title);
+      document.getElementById("videoPlayer").src = streamUrl;
+      streamCard.style.display = "block";
+    } else {
+      verificationLock.style.display = "block";
     }
-  }
   </script>
 </body>
 </html>
