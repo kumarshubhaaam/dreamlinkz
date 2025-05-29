@@ -37,33 +37,38 @@
   <h2>Access Granted</h2>
   <p>Redirecting to your stream content...</p>
 
-  <script>
-    function generateFingerprint() {
-      return btoa(navigator.userAgent + screen.width + screen.height);
-    }
+ <script>
+  function generateFingerprint() {
+    return btoa(navigator.userAgent + screen.width + screen.height);
+  }
 
-    const fingerprint = generateFingerprint();
-    const token = crypto.randomUUID(); // Generate a unique token
-    const expiresAt = Date.now() + (24 * 60 * 60 * 1000);
+  const params = new URLSearchParams(window.location.search);
+  const rawUrl = params.get('url') || '';
+  const title = params.get('title') || '';
+  const token = params.get('token'); // ✅ Use token from verify.html
 
-    const accessData = {
-      token,
-      fingerprint,
-      expires: expiresAt
-    };
+  if (!token) {
+    alert("Missing token. Please re-verify.");
+    window.location.href = "verify.html";
+  }
 
-    localStorage.setItem('verifiedUser', JSON.stringify(accessData));
-    console.log("✅ Access granted until:", new Date(expiresAt));
+  const fingerprint = generateFingerprint();
+  const expiresAt = Date.now() + (24 * 60 * 60 * 1000);
 
-    const params = new URLSearchParams(window.location.search);
-    const rawUrl = params.get('url') || '';
-    const title = params.get('title') || '';
+  const accessData = {
+    token,
+    fingerprint,
+    expires: expiresAt
+  };
 
-    const target = `/stream.html?url=${encodeURIComponent(rawUrl)}&title=${encodeURIComponent(title)}&token=${token}`;
+  localStorage.setItem('verifiedUser', JSON.stringify(accessData));
+  console.log("✅ Access granted until:", new Date(expiresAt));
 
-    setTimeout(() => {
-      window.location.href = target;
-    }, 2000);
-  </script>
+  const target = `/stream.html?url=${encodeURIComponent(rawUrl)}&title=${encodeURIComponent(title)}&token=${token}`;
+
+  setTimeout(() => {
+    window.location.href = target;
+  }, 2000);
+ </script>
 </body>
 </html>
