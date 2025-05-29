@@ -81,3 +81,8 @@
   </script>
 </body>
 </html>
+
+
+
+const token = crypto.randomUUID(); // Only once
+const finalRedirect = `https://dreamlinkz.netlify.app/access-granted.html?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}&token=${token}`;
