@@ -1,9 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Access Granted</title>
+  
   <style>
     body {
       margin: 0;
@@ -23,9 +23,15 @@
     p {
       font-size: 1.1em;
     }
+
+    /* Responsive text for mobile */
     @media (max-width: 600px) {
-      h2 { font-size: 1.8em; }
-      p { font-size: 1.3em; }
+      h2 {
+        font-size: 1.8em;
+      }
+      p {
+        font-size: 1.3em;
+      }
     }
   </style>
 </head>
@@ -34,59 +40,38 @@
   <p>Redirecting to your stream content...</p>
 
   <script>
-    function generateFingerprint() {
-      return btoa(navigator.userAgent + screen.width + screen.height);
-    }
+    
+// Save 24-hour access in IndexedDB
+const expiresAt = Date.now() + (24 * 60 * 60 * 1000);
+const openReq = indexedDB.open("VerificationDB", 1);
+openReq.onupgradeneeded = function (e) {
+  e.target.result.createObjectStore("status", { keyPath: "id" });
+};
+openReq.onsuccess = function (e) {
+  const db = e.target.result;
+  const tx = db.transaction("status", "readwrite");
+  const store = tx.objectStore("status");
+  store.put({ id: "verified", expiresAt });
+};
 
-    function openDB() {
-      return new Promise((resolve, reject) => {
-        const request = indexedDB.open('VerificationDB', 1);
-        request.onupgradeneeded = function (e) {
-          const db = e.target.result;
-          if (!db.objectStoreNames.contains('AccessStore')) {
-            db.createObjectStore('AccessStore', { keyPath: 'id' });
-          }
-        };
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject("IndexedDB failed to open.");
-      });
-    }
+    const expiresAt = Date.now() + (24 * 60 * 60 * 1000);
+    localStorage.setItem('verifiedUntil', expiresAt);
 
-    async function saveAccessData(data) {
-      const db = await openDB();
-      const tx = db.transaction('AccessStore', 'readwrite');
-      const store = tx.objectStore('AccessStore');
-      store.put({ id: 'user-access', ...data });
-      await tx.done;
-      db.close();
-    }
-
+    // Get URL and title from query params
     const params = new URLSearchParams(window.location.search);
     const rawUrl = params.get('url') || '';
-    const title = params.get('title') || '';
-    const token = params.get('token');
+    const title = params.get('title');
 
-    if (!token || !rawUrl) {
-      alert("Missing token or URL. Please verify again.");
-      window.location.href = "verify.html";
+    // Build redirect target
+    let target = `/stream.html?url=${encodeURIComponent(rawUrl)}`;
+    if (title) {
+      target += `&title=${encodeURIComponent(title)}`;
     }
 
-    const fingerprint = generateFingerprint();
-    const expiresAt = Date.now() + (24 * 60 * 60 * 1000);
-
-    const accessData = {
-      token,
-      fingerprint,
-      expires: expiresAt
-    };
-
-    saveAccessData(accessData).then(() => {
-      console.log("✅ IndexedDB: Access saved");
-      const target = `/stream.html?url=${encodeURIComponent(rawUrl)}&title=${encodeURIComponent(title)}&token=${token}`;
-      setTimeout(() => {
-        window.location.href = target;
-      }, 2000);
-    });
+    // Redirect after short delay
+    setTimeout(() => {
+      window.location.href = target;
+    }, 2000);
   </script>
 </body>
 </html>
