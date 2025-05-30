@@ -91,7 +91,7 @@
 const verifiedUntil = null;
   if (verifiedUntil && Date.now() < Number(verifiedUntil)) {
     // Skip verification if still valid
-    window.location.href = `https://br.netlify.app/access-granted.html?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title || "")}`;
+    window.location.href = `https://dreamlinkz.netlify.app/access-granted.html?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title || "")}`;
   }
 
   async function generateAdLink() {
@@ -100,7 +100,7 @@ const verifiedUntil = null;
       return;
     }
 
-    const finalRedirect = `https://brooov.netlify.app/access-granted.html?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title || "")}`;
+    const finalRedirect = `https://dreamlinkz.netlify.app/access-granted.html?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title || "")}`;
     const apiToken = '067989ffeb7fa279b3aa7036dff92a50b5b75492';
     const shortUrlApi = `https://linkshortify.com/api?api=${apiToken}&url=${encodeURIComponent(finalRedirect)}`;
 
