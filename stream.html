@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,115 +13,137 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      min-height: 100vh;
+      justify-content: flex-start;
+      height: 100vh;
+      padding-top: 80px;
       text-align: center;
     }
-    .card, .verify-lock {
-      background-color: #1c1c1c;
-      padding: 2rem;
-      border-radius: 1rem;
-      margin: 1rem;
-      max-width: 800px;
-      width: 100%;
-      box-shadow: 0 0 12px rgba(0, 255, 226, 0.2);
+
+    .back-btn {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      padding: 10px 26px;
+      font-size: 18px;
+      border-radius: 999px;
+      border: none;
+      background: #ff4e4e;
+      color: white;
+      font-weight: bold;
+      box-shadow: 0 0 15px rgba(255, 78, 78, 0.8);
+      cursor: pointer;
     }
+
+    .card {
+      margin-top: 40px;
+      width: 90%;
+      max-width: 320px;
+      background: #1a1a1a;
+      border: 2px solid rgba(0, 255, 255, 0.5);
+      box-shadow: 0 0 12px rgba(0, 255, 255, 0.3);
+      border-radius: 16px;
+      padding: 24px 16px;
+    }
+
+    .card h2 {
+      margin-bottom: 16px;
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .card p {
+      font-size: 16px;
+      color: #ccc;
+      line-height: 1.5;
+    }
+
     .iframe-container {
       position: relative;
       padding-bottom: 56.25%;
       height: 0;
       overflow: hidden;
+      border-radius: 12px;
+      margin-top: 16px;
     }
+
     .iframe-container iframe {
       position: absolute;
       width: 100%;
       height: 100%;
       border: none;
-      border-radius: 0.5rem;
-    }
-    .verify-btn {
-      margin-top: 1rem;
-      padding: 12px 24px;
-      font-size: 1rem;
-      background: linear-gradient(to right, #ff6a00, #ff9472);
-      color: white;
-      border: none;
-      border-radius: 2rem;
-      cursor: pointer;
-      font-weight: bold;
+      border-radius: 12px;
     }
   </style>
 </head>
 <body>
 
-<div id="verificationLock" class="verify-lock" style="display: none;">
-  <h2>Verification Required</h2>
-  <p>This token is invalid, expired, or from another device.</p>
-  <button class="verify-btn" onclick="window.location.href='verify.html'">Verify Now</button>
-</div>
+<button class="back-btn" onclick="history.back()">Back</button>
 
-<div class="card" id="streamCard" style="display: none;">
+<div class="card" id="streamCard">
   <h2 id="videoTitle">Streaming...</h2>
-  <div class="iframe-container">
-    <iframe id="videoPlayer" allowfullscreen></iframe>
-  </div>
+  <p id="videoMessage">No video URL provided.</p>
 </div>
 
 <script>
   const urlParams = new URLSearchParams(window.location.search);
   const streamUrl = urlParams.get('url');
   const title = urlParams.get('title') || "Streaming...";
-  const token = urlParams.get('token');
 
-  function generateFingerprint() {
-    return btoa(navigator.userAgent + screen.width + screen.height);
-  }
+  const titleEl = document.getElementById("videoTitle");
+  const msgEl = document.getElementById("videoMessage");
+  const card = document.getElementById("streamCard");
 
-  function openDB() {
+  function checkAccessInIndexedDB() {
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open('VerificationDB', 1);
-      request.onupgradeneeded = function (e) {
-        const db = e.target.result;
-        if (!db.objectStoreNames.contains('AccessStore')) {
-          db.createObjectStore('AccessStore', { keyPath: 'id' });
-        }
+      const request = indexedDB.open("VerificationDB", 1);
+
+      request.onerror = () => reject("Failed to open IndexedDB.");
+      request.onsuccess = (event) => {
+        const db = event.target.result;
+        const tx = db.transaction("verification", "readonly");
+        const store = tx.objectStore("verification");
+        const getRequest = store.get("accessGranted");
+
+        getRequest.onsuccess = () => {
+          resolve(getRequest.result === true);
+        };
+        getRequest.onerror = () => resolve(false);
       };
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject("IndexedDB failed to open.");
+
+      request.onupgradeneeded = (event) => {
+        const db = event.target.result;
+        db.createObjectStore("verification");
+      };
     });
   }
 
-  async function getAccessData() {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction('AccessStore', 'readonly');
-      const store = tx.objectStore('AccessStore');
-      const request = store.get('user-access');
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject("Failed to read access data.");
-      tx.oncomplete = () => db.close();
-    });
-  }
+  async function loadVideoIfVerified() {
+    const accessGranted = await checkAccessInIndexedDB();
 
-  getAccessData().then(data => {
-    const now = Date.now();
-    const fingerprint = generateFingerprint();
-
-    if (
-      data &&
-      data.token === token &&
-      data.fingerprint === fingerprint &&
-      now < data.expires
-    ) {
-      document.getElementById("videoTitle").innerText = decodeURIComponent(title);
-      document.getElementById("videoPlayer").src = streamUrl;
-      document.getElementById("streamCard").style.display = "block";
-    } else {
-      document.getElementById("verificationLock").style.display = "block";
+    if (!accessGranted) {
+      msgEl.innerText = "Access denied. Please verify first.";
+      return;
     }
-  }).catch(() => {
-    document.getElementById("verificationLock").style.display = "block";
-  });
+
+    if (streamUrl) {
+      titleEl.innerText = decodeURIComponent(title);
+      msgEl.style.display = "none";
+
+      const container = document.createElement("div");
+      container.className = "iframe-container";
+
+      const iframe = document.createElement("iframe");
+      iframe.src = streamUrl;
+      iframe.allowFullscreen = true;
+
+      container.appendChild(iframe);
+      card.appendChild(container);
+    }
+  }
+
+  loadVideoIfVerified();
 </script>
 
 </body>
