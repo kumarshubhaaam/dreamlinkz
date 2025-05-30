@@ -40,38 +40,42 @@
   <p>Redirecting to your stream content...</p>
 
   <script>
-    
-// Save 24-hour access in IndexedDB
-const expiresAt = Date.now() + (24 * 60 * 60 * 1000);
-const openReq = indexedDB.open("VerificationDB", 1);
-openReq.onupgradeneeded = function (e) {
-  e.target.result.createObjectStore("status", { keyPath: "id" });
-};
-openReq.onsuccess = function (e) {
-  const db = e.target.result;
-  const tx = db.transaction("status", "readwrite");
-  const store = tx.objectStore("status");
-  store.put({ id: "verified", expiresAt });
-};
+  const params = new URLSearchParams(window.location.search);
+  const rawUrl = params.get('url') || '';
+  const title = params.get('title');
+  const expiresAt = Date.now() + (24 * 60 * 60 * 1000);
 
-    const expiresAt = Date.now() + (24 * 60 * 60 * 1000);
-    localStorage.setItem('verifiedUntil', expiresAt);
+  const target = `/stream.html?url=${encodeURIComponent(rawUrl)}${title ? `&title=${encodeURIComponent(title)}` : ''}`;
 
-    // Get URL and title from query params
-    const params = new URLSearchParams(window.location.search);
-    const rawUrl = params.get('url') || '';
-    const title = params.get('title');
+  const openReq = indexedDB.open("VerificationDB", 1);
 
-    // Build redirect target
-    let target = `/stream.html?url=${encodeURIComponent(rawUrl)}`;
-    if (title) {
-      target += `&title=${encodeURIComponent(title)}`;
+  openReq.onupgradeneeded = function (e) {
+    const db = e.target.result;
+    if (!db.objectStoreNames.contains("status")) {
+      db.createObjectStore("status", { keyPath: "id" });
     }
+  };
 
-    // Redirect after short delay
-    setTimeout(() => {
-      window.location.href = target;
-    }, 2000);
+  openReq.onsuccess = function (e) {
+    const db = e.target.result;
+    const tx = db.transaction("status", "readwrite");
+    const store = tx.objectStore("status");
+    const putReq = store.put({ id: "verified", expiresAt });
+
+    putReq.onsuccess = function () {
+      setTimeout(() => {
+        window.location.href = target;
+      }, 1000); // slight delay for smoother UX
+    };
+
+    putReq.onerror = function () {
+      alert("Verification failed to save. Please try again.");
+    };
+  };
+
+  openReq.onerror = function () {
+    alert("Failed to access browser database. Please retry.");
+  };
   </script>
 </body>
 </html>
