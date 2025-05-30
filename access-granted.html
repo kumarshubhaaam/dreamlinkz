@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -22,14 +23,9 @@
     p {
       font-size: 1.1em;
     }
-
     @media (max-width: 600px) {
-      h2 {
-        font-size: 1.8em;
-      }
-      p {
-        font-size: 1.3em;
-      }
+      h2 { font-size: 1.8em; }
+      p { font-size: 1.3em; }
     }
   </style>
 </head>
@@ -42,7 +38,29 @@
       return btoa(navigator.userAgent + screen.width + screen.height);
     }
 
-    // Get token, URL, and title from query
+    function openDB() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open('VerificationDB', 1);
+        request.onupgradeneeded = function (e) {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains('AccessStore')) {
+            db.createObjectStore('AccessStore', { keyPath: 'id' });
+          }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject("IndexedDB failed to open.");
+      });
+    }
+
+    async function saveAccessData(data) {
+      const db = await openDB();
+      const tx = db.transaction('AccessStore', 'readwrite');
+      const store = tx.objectStore('AccessStore');
+      store.put({ id: 'user-access', ...data });
+      await tx.done;
+      db.close();
+    }
+
     const params = new URLSearchParams(window.location.search);
     const rawUrl = params.get('url') || '';
     const title = params.get('title') || '';
@@ -54,7 +72,7 @@
     }
 
     const fingerprint = generateFingerprint();
-    const expiresAt = Date.now() + (24 * 60 * 60 * 1000); // 24 hours from now
+    const expiresAt = Date.now() + (24 * 60 * 60 * 1000);
 
     const accessData = {
       token,
@@ -62,15 +80,13 @@
       expires: expiresAt
     };
 
-    // Save access data to localStorage
-    localStorage.setItem('verifiedUser', JSON.stringify(accessData));
-    console.log("✅ Token stored for 24hr:", accessData);
-
-    // Redirect to stream page with token
-    const target = `/stream.html?url=${encodeURIComponent(rawUrl)}&title=${encodeURIComponent(title)}&token=${token}`;
-    setTimeout(() => {
-      window.location.href = target;
-    }, 2000);
+    saveAccessData(accessData).then(() => {
+      console.log("✅ IndexedDB: Access saved");
+      const target = `/stream.html?url=${encodeURIComponent(rawUrl)}&title=${encodeURIComponent(title)}&token=${token}`;
+      setTimeout(() => {
+        window.location.href = target;
+      }, 2000);
+    });
   </script>
 </body>
 </html>
