@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -23,6 +22,7 @@
     p {
       font-size: 1.1em;
     }
+
     @media (max-width: 600px) {
       h2 {
         font-size: 1.8em;
@@ -37,38 +37,40 @@
   <h2>Access Granted</h2>
   <p>Redirecting to your stream content...</p>
 
- <script>
-  function generateFingerprint() {
-    return btoa(navigator.userAgent + screen.width + screen.height);
-  }
+  <script>
+    function generateFingerprint() {
+      return btoa(navigator.userAgent + screen.width + screen.height);
+    }
 
-  const params = new URLSearchParams(window.location.search);
-  const rawUrl = params.get('url') || '';
-  const title = params.get('title') || '';
-  const token = params.get('token'); // ✅ Use token from verify.html
+    // Get token, URL, and title from query
+    const params = new URLSearchParams(window.location.search);
+    const rawUrl = params.get('url') || '';
+    const title = params.get('title') || '';
+    const token = params.get('token');
 
-  if (!token) {
-    alert("Missing token. Please re-verify.");
-    window.location.href = "verify.html";
-  }
+    if (!token || !rawUrl) {
+      alert("Missing token or URL. Please verify again.");
+      window.location.href = "verify.html";
+    }
 
-  const fingerprint = generateFingerprint();
-  const expiresAt = Date.now() + (24 * 60 * 60 * 1000);
+    const fingerprint = generateFingerprint();
+    const expiresAt = Date.now() + (24 * 60 * 60 * 1000); // 24 hours from now
 
-  const accessData = {
-    token,
-    fingerprint,
-    expires: expiresAt
-  };
+    const accessData = {
+      token,
+      fingerprint,
+      expires: expiresAt
+    };
 
-  localStorage.setItem('verifiedUser', JSON.stringify(accessData));
-  console.log("✅ Access granted until:", new Date(expiresAt));
+    // Save access data to localStorage
+    localStorage.setItem('verifiedUser', JSON.stringify(accessData));
+    console.log("✅ Token stored for 24hr:", accessData);
 
-  const target = `/stream.html?url=${encodeURIComponent(rawUrl)}&title=${encodeURIComponent(title)}&token=${token}`;
-
-  setTimeout(() => {
-    window.location.href = target;
-  }, 2000);
- </script>
+    // Redirect to stream page with token
+    const target = `/stream.html?url=${encodeURIComponent(rawUrl)}&title=${encodeURIComponent(title)}&token=${token}`;
+    setTimeout(() => {
+      window.location.href = target;
+    }, 2000);
+  </script>
 </body>
 </html>
