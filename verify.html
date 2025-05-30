@@ -63,7 +63,7 @@
       localStorage.setItem('verifiedUser', JSON.stringify(accessData));
 
       const apiToken = '067989ffeb7fa279b3aa7036dff92a50b5b75492';
-      const finalRedirect = `https://dreamlinkz.netlify.app/access-granted.html?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}&token=${token}`;
+const finalRedirect = `https://dreamlinkz.netlify.app/access-granted.html?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}&token=${token}`;
       const shortUrlApi = `https://linkshortify.com/api?api=${apiToken}&url=${encodeURIComponent(finalRedirect)}`;
 
       try {
@@ -81,8 +81,3 @@
   </script>
 </body>
 </html>
-
-
-
-const token = crypto.randomUUID(); // Only once
-const finalRedirect = `https://dreamlinkz.netlify.app/access-granted.html?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}&token=${token}`;
