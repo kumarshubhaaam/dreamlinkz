@@ -5,7 +5,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Verify Task</title>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     body {
       margin: 0;
@@ -16,6 +15,7 @@
       justify-content: center;
       align-items: center;
       min-height: 100vh;
+      text-align: center;
     }
     .card {
       background: linear-gradient(145deg, #1e1e1e, #111);
@@ -24,16 +24,15 @@
       padding: 20px;
       max-width: 400px;
       width: 90%;
-      text-align: center;
     }
     .btn {
-      padding: 15px;
-      margin: 10px 0;
+      margin-top: 1rem;
       width: 100%;
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: bold;
       border: none;
       border-radius: 50px;
-      font-size: 1em;
-      font-weight: 600;
       cursor: pointer;
       color: white;
     }
@@ -43,41 +42,38 @@
   </style>
 </head>
 <body>
-  <div class="card">
-    <h2>⚡ Verify to Unlock Access ⚡</h2>
-    <p>This will grant 24h access on this browser only.</p>
-    <button class="btn verify-btn" onclick="generateAdLink()">Click To Verify</button>
-  </div>
 
-  <script>
-    const params = new URLSearchParams(window.location.search);
-    const url = params.get('url');
-    const title = params.get('title') || '';
+<div class="card">
+  <h2>🔐 Verify to Access</h2>
+  <p>This will unlock access to videos for 24 hours on this browser only.</p>
+  <button class="btn verify-btn" onclick="generateAdLink()">Click to Verify</button>
+</div>
 
-    async function generateAdLink() {
-      const fingerprint = btoa(navigator.userAgent + screen.width + screen.height);
-      const token = crypto.randomUUID();
-      const expires = Date.now() + 24 * 60 * 60 * 1000;
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const url = params.get('url');
+  const title = params.get('title') || '';
 
-      const accessData = { token, fingerprint, expires };
-      localStorage.setItem('verifiedUser', JSON.stringify(accessData));
+  async function generateAdLink() {
+    const token = crypto.randomUUID();
+    const apiToken = '067989ffeb7fa279b3aa7036dff92a50b5b75492';
 
-      const apiToken = '067989ffeb7fa279b3aa7036dff92a50b5b75492';
-const finalRedirect = `https://dreamlinkz.netlify.app/access-granted.html?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}&token=${token}`;
-      const shortUrlApi = `https://linkshortify.com/api?api=${apiToken}&url=${encodeURIComponent(finalRedirect)}`;
+    const redirect = `https://dreamlinkz.netlify.app/access-granted.html?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}&token=${token}`;
+    const shortApi = `https://linkshortify.com/api?api=${apiToken}&url=${encodeURIComponent(redirect)}`;
 
-      try {
-        const res = await fetch(shortUrlApi);
-        const result = await res.json();
-        if (result.status === 'error') {
-          alert(result.message);
-        } else {
-          window.location.href = result.shortenedUrl;
-        }
-      } catch (err) {
-        alert('Error generating shortlink.');
+    try {
+      const res = await fetch(shortApi);
+      const result = await res.json();
+      if (result.status === 'error') {
+        alert(result.message);
+      } else {
+        window.location.href = result.shortenedUrl;
       }
+    } catch (err) {
+      alert("Failed to create shortlink.");
     }
-  </script>
+  }
+</script>
+
 </body>
 </html>
